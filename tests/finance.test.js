@@ -1,0 +1,13 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {simulate,conventional,intelligent,stampTax} from '../src/finance.js';
+const close=(a,b)=>assert.ok(Math.abs(a-b)<0.001,`${a} != ${b}`);
+const base={price:35000000,down:20,downUnit:'%',bonus:1500000,bonusIncluded:false,rate:0.89,months:36,balloon:40,balloonUnit:'%',type:'conventional',insurance:0,notary:0,pledge:0,admin:0};
+test('French amortization repays balance',()=>{const p=conventional(20000000,.0089,36).payment;let balance=20000000;for(let m=1;m<=36;m++)balance=balance*1.0089-p;close(balance,0);});
+test('zero rate conventional and balloon',()=>{close(conventional(12000000,0,12).payment,1000000);close(intelligent(12000000,0,12,6000000,13).payment,500000);});
+for(const maturity of [36,37])test(`balloon independently amortizes through month ${maturity}`,()=>{const r=intelligent(28000000,.0089,36,14000000,maturity);let balance=28000000;let interest=0;for(let m=1;m<=maturity;m++){interest+=balance*.0089;balance*=1.0089;if(m<=36)balance-=r.payment;if(m===maturity)balance-=14000000;}close(balance,0);close(interest,r.interest);});
+test('tax ceiling and fractional months',()=>{close(stampTax(10000000,1),6600);close(stampTax(10000000,1.1),13200);close(stampTax(10000000,36),80000);});
+test('financed costs and tax are counted once',()=>{const r=simulate({...base,notary:200000,notaryFinanced:true,pledge:100000,taxFinanced:true,insurance:50000});close(r.principal, (r.net-r.down+200000)/.992);close(r.tax,r.principal*.008);close(r.total,r.net+r.financingCost);close(r.initial,r.down+100000);assert.ok(r.interest>simulate(base).interest);});
+test('included bonus never deducted again',()=>{close(simulate({...base,bonusIncluded:true}).net,base.price);});
+test('later balloon extends insurance and tax period',()=>{const r=simulate({...base,type:'intelligent',months:6,nextMonth:true,insurance:10000});close(r.insuranceTotal,70000);close(r.tax,r.principal*.00066*7);});
+test('bad inputs rejected',()=>{for(const patch of [{price:NaN},{down:100},{months:0},{months:1.5},{bonus:40000000},{rate:-1},{balloon:100,type:'intelligent',rate:0}])assert.throws(()=>simulate({...base,...patch}));});
