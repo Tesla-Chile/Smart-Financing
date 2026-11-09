@@ -1,5 +1,5 @@
 import {conventional,intelligent} from './finance.js?v=20261105-cae-2';
-import {promotions,monthlyFromCAE} from './promotions.js?v=20261109-modalidad-global';
+import {promotions,monthlyFromCAE} from './promotions.js?v=20261109-minimo-scotia';
 const form=document.querySelector('#form');
 const money=n=>new Intl.NumberFormat('es-CL',{style:'currency',currency:'CLP',maximumFractionDigits:0}).format(n);
 const chileDate=()=>new Intl.DateTimeFormat('sv-SE',{timeZone:'America/Santiago',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
